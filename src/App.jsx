@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DoctorPage from "./DoctorPage";
 
 const colors = {
   bg: "#F0F4F8",
@@ -27,11 +28,10 @@ function fmtDate(date) { return new Date(date).toLocaleDateString("en-US", { mon
 function today() { return new Date().toDateString(); }
 
 const seedPatients = [
-  { id: genId(), firstName: "Ahmad", lastName: "Khalil", phone: "+962791234567", checkins: [{ id: genId(), ts: Date.now() - 86400000 * 5 }, { id: genId(), ts: Date.now() - 86400000 * 30 }] },
-  { id: genId(), firstName: "Sara", lastName: "Mansour", phone: "+962799876543", checkins: [{ id: genId(), ts: Date.now() - 86400000 * 2 }] },
+  { id: genId(), firstName: "Ahmad", lastName: "Khalil", phone: "+962791234567", status: "waiting", checkins: [{ id: genId(), ts: Date.now() - 86400000 * 5 }, { id: genId(), ts: Date.now() - 86400000 * 30 }] },
+  { id: genId(), firstName: "Sara", lastName: "Mansour", phone: "+962799876543", status: "waiting", checkins: [{ id: genId(), ts: Date.now() - 86400000 * 2 }] },
 ];
 
-// ── Shared UI ──
 function Input({ label, value, onChange, placeholder, type = "text", autoFocus }) {
   const [focused, setFocused] = useState(false);
   return (
@@ -131,7 +131,6 @@ function ActionBtn({ label, color, onClick }) {
   );
 }
 
-// ── CHECK-IN PAGE ──
 function CheckinPage({ patients, setPatients, showToast }) {
   const [search, setSearch] = useState("");
   const [showNewForm, setShowNewForm] = useState(false);
@@ -151,21 +150,18 @@ function CheckinPage({ patients, setPatients, showToast }) {
   const handleCheckinExisting = (patient) => {
     const newCheckin = { id: genId(), ts: Date.now() };
     setPatients((prev) => prev.map((p) =>
-      p.id === patient.id ? { ...p, checkins: [newCheckin, ...p.checkins] } : p
+      p.id === patient.id ? { ...p, checkins: [newCheckin, ...p.checkins], status: "waiting" } : p
     ));
     setSearch("");
     showToast(`${patient.firstName} checked in`);
   };
 
   const handleAddNew = () => {
-    if (!newFirst.trim() || !newLast.trim() || !newPhone.trim()) {
-      setError("All fields are required."); return;
-    }
+    if (!newFirst.trim() || !newLast.trim() || !newPhone.trim()) { setError("All fields are required."); return; }
     setError("");
-    const newCheckin = { id: genId(), ts: Date.now() };
     setPatients((prev) => [...prev, {
       id: genId(), firstName: newFirst.trim(), lastName: newLast.trim(),
-      phone: newPhone.trim(), checkins: [newCheckin],
+      phone: newPhone.trim(), checkins: [{ id: genId(), ts: Date.now() }], status: "waiting",
     }]);
     setNewFirst(""); setNewLast(""); setNewPhone("");
     setShowNewForm(false);
@@ -174,29 +170,17 @@ function CheckinPage({ patients, setPatients, showToast }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-
-      {/* Search box */}
       <div style={{ background: colors.card, borderRadius: 20, boxShadow: "0 4px 32px rgba(37,99,235,0.07)", padding: 28 }}>
         <div style={{ height: 4, background: `linear-gradient(90deg, ${colors.primary}, ${colors.accent})`, borderRadius: 2, marginBottom: 24 }} />
         <div style={{ marginBottom: 12 }}>
-          <Input
-            label="Search Patient"
-            value={search}
-            onChange={setSearch}
-            placeholder="Type name or phone..."
-            autoFocus
-          />
+          <Input label="Search Patient" value={search} onChange={setSearch} placeholder="Type name or phone..." autoFocus />
         </div>
-
-        {/* Search results */}
         {searchResults.length > 0 && (
           <div style={{ border: `1px solid ${colors.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
             {searchResults.map((p, i) => (
               <div key={p.id} style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "12px 16px",
-                borderBottom: i < searchResults.length - 1 ? `1px solid ${colors.border}` : "none",
-                background: "white",
+                padding: "12px 16px", borderBottom: i < searchResults.length - 1 ? `1px solid ${colors.border}` : "none", background: "white",
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Avatar first={p.firstName} last={p.lastName} size={36} />
@@ -205,44 +189,25 @@ function CheckinPage({ patients, setPatients, showToast }) {
                     <div style={{ fontFamily: font, fontSize: 12, color: colors.textLight }}>{p.phone} · {p.checkins.length} visit{p.checkins.length !== 1 ? "s" : ""}</div>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleCheckinExisting(p)}
-                  style={{
-                    padding: "8px 20px", borderRadius: 10, background: colors.primary,
-                    color: "white", border: "none", fontFamily: font, fontWeight: 700,
-                    fontSize: 14, cursor: "pointer",
-                  }}
-                >Check In →</button>
+                <button onClick={() => handleCheckinExisting(p)} style={{
+                  padding: "8px 20px", borderRadius: 10, background: colors.primary,
+                  color: "white", border: "none", fontFamily: font, fontWeight: 700, fontSize: 14, cursor: "pointer",
+                }}>Check In →</button>
               </div>
             ))}
           </div>
         )}
-
-        {/* No results */}
         {search.trim().length >= 2 && searchResults.length === 0 && (
-          <div style={{
-            padding: "14px 16px", borderRadius: 12, background: colors.inputBg,
-            fontFamily: font, fontSize: 14, color: colors.textLight, marginBottom: 12,
-          }}>
+          <div style={{ padding: "14px 16px", borderRadius: 12, background: colors.inputBg, fontFamily: font, fontSize: 14, color: colors.textLight, marginBottom: 12 }}>
             No patient found for "{search}"
           </div>
         )}
-
-        {/* Add new patient button */}
-        <button
-          onClick={() => setShowNewForm(!showNewForm)}
-          style={{
-            width: "100%", padding: "12px", borderRadius: 12,
-            background: showNewForm ? colors.inputBg : "transparent",
-            color: colors.primary, border: `2px dashed ${colors.primary}`,
-            fontFamily: font, fontWeight: 700, fontSize: 15, cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-        >
-          {showNewForm ? "Cancel" : "+ New Patient"}
-        </button>
-
-        {/* New patient form */}
+        <button onClick={() => setShowNewForm(!showNewForm)} style={{
+          width: "100%", padding: "12px", borderRadius: 12,
+          background: showNewForm ? colors.inputBg : "transparent",
+          color: colors.primary, border: `2px dashed ${colors.primary}`,
+          fontFamily: font, fontWeight: 700, fontSize: 15, cursor: "pointer", transition: "all 0.2s",
+        }}>{showNewForm ? "Cancel" : "+ New Patient"}</button>
         {showNewForm && (
           <div style={{ marginTop: 16 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -259,7 +224,6 @@ function CheckinPage({ patients, setPatients, showToast }) {
         )}
       </div>
 
-      {/* Today's list */}
       <div style={{ background: colors.card, borderRadius: 20, boxShadow: "0 4px 32px rgba(37,99,235,0.07)", overflow: "hidden" }}>
         <div style={{ padding: "20px 28px", borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ fontFamily: fontDisplay, fontSize: 20, color: colors.primaryDark, margin: 0 }}>Today's Check-Ins</h2>
@@ -292,7 +256,6 @@ function CheckinPage({ patients, setPatients, showToast }) {
   );
 }
 
-// ── RECORDS PAGE ──
 function RecordsPage({ patients, setPatients, showToast }) {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
@@ -306,10 +269,7 @@ function RecordsPage({ patients, setPatients, showToast }) {
     return `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) || p.phone.includes(q);
   });
 
-  const openEdit = (p) => {
-    setEditing(p); setEditFirst(p.firstName); setEditLast(p.lastName); setEditPhone(p.phone);
-  };
-
+  const openEdit = (p) => { setEditing(p); setEditFirst(p.firstName); setEditLast(p.lastName); setEditPhone(p.phone); };
   const saveEdit = () => {
     setPatients((prev) => prev.map((p) =>
       p.id === editing.id ? { ...p, firstName: editFirst.trim(), lastName: editLast.trim(), phone: editPhone.trim() } : p
@@ -330,29 +290,27 @@ function RecordsPage({ patients, setPatients, showToast }) {
         </div>
         {filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: colors.textLight, fontFamily: font }}>No patients found</div>
-        ) : (
-          filtered.map((p, i) => (
-            <div key={p.id} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "14px 28px", borderBottom: i < filtered.length - 1 ? `1px solid ${colors.border}` : "none",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <Avatar first={p.firstName} last={p.lastName} />
-                <div>
-                  <div style={{ fontFamily: font, fontWeight: 600, fontSize: 15, color: colors.text }}>{p.firstName} {p.lastName}</div>
-                  <div style={{ fontFamily: font, fontSize: 13, color: colors.textLight }}>{p.phone}</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontFamily: font, fontSize: 12, color: colors.textLight, background: colors.bg, padding: "3px 10px", borderRadius: 8 }}>
-                  {p.checkins.length} visit{p.checkins.length !== 1 ? "s" : ""}
-                </span>
-                <ActionBtn label="History" color={colors.primary} onClick={() => setHistoryPatient(p)} />
-                <ActionBtn label="Edit" color={colors.accent} onClick={() => openEdit(p)} />
+        ) : filtered.map((p, i) => (
+          <div key={p.id} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "14px 28px", borderBottom: i < filtered.length - 1 ? `1px solid ${colors.border}` : "none",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <Avatar first={p.firstName} last={p.lastName} />
+              <div>
+                <div style={{ fontFamily: font, fontWeight: 600, fontSize: 15, color: colors.text }}>{p.firstName} {p.lastName}</div>
+                <div style={{ fontFamily: font, fontSize: 13, color: colors.textLight }}>{p.phone}</div>
               </div>
             </div>
-          ))
-        )}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontFamily: font, fontSize: 12, color: colors.textLight, background: colors.bg, padding: "3px 10px", borderRadius: 8 }}>
+                {p.checkins.length} visit{p.checkins.length !== 1 ? "s" : ""}
+              </span>
+              <ActionBtn label="History" color={colors.primary} onClick={() => setHistoryPatient(p)} />
+              <ActionBtn label="Edit" color={colors.accent} onClick={() => openEdit(p)} />
+            </div>
+          </div>
+        ))}
       </div>
 
       {editing && (
@@ -410,9 +368,8 @@ export default function DentalStaffApp() {
   const [toastMsg, setToastMsg] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
 
-  const todayCount = patients.filter((p) =>
-    p.checkins.some((c) => new Date(c.ts).toDateString() === today())
-  ).length;
+  const todayCount = patients.filter((p) => p.checkins.some((c) => new Date(c.ts).toDateString() === today())).length;
+  const waitingCount = patients.filter((p) => p.checkins.some((c) => new Date(c.ts).toDateString() === today()) && p.status === "waiting").length;
 
   const showToast = (msg) => {
     setToastMsg(msg); setToastVisible(true);
@@ -440,13 +397,13 @@ export default function DentalStaffApp() {
 
         <div style={{ background: colors.card, borderRadius: 14, padding: 6, display: "flex", gap: 4, boxShadow: "0 2px 12px rgba(37,99,235,0.06)" }}>
           <NavTab label="Check In" active={page === "checkin"} onClick={() => setPage("checkin")} badge={todayCount} />
+          <NavTab label="Doctor" active={page === "doctor"} onClick={() => setPage("doctor")} badge={waitingCount} />
           <NavTab label="Records" active={page === "records"} onClick={() => setPage("records")} badge={patients.length} />
         </div>
 
-        {page === "checkin"
-          ? <CheckinPage patients={patients} setPatients={setPatients} showToast={showToast} />
-          : <RecordsPage patients={patients} setPatients={setPatients} showToast={showToast} />
-        }
+        {page === "checkin" && <CheckinPage patients={patients} setPatients={setPatients} showToast={showToast} />}
+        {page === "doctor" && <DoctorPage patients={patients} setPatients={setPatients} showToast={showToast} />}
+        {page === "records" && <RecordsPage patients={patients} setPatients={setPatients} showToast={showToast} />}
       </div>
 
       <Toast message={toastMsg} visible={toastVisible} />
