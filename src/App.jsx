@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DoctorPage from "./DoctorPage";
+import Dashboard from "./Dashboard";
 
 const colors = {
   bg: "#F0F4F8",
@@ -399,11 +400,13 @@ export default function DentalStaffApp() {
           <NavTab label="Check In" active={page === "checkin"} onClick={() => setPage("checkin")} badge={todayCount} />
           <NavTab label="Doctor" active={page === "doctor"} onClick={() => setPage("doctor")} badge={waitingCount} />
           <NavTab label="Records" active={page === "records"} onClick={() => setPage("records")} badge={patients.length} />
+          <NavTab label="Dashboard" active={page === "dashboard"} onClick={() => setPage("dashboard")} />
         </div>
 
         {page === "checkin" && <CheckinPage patients={patients} setPatients={setPatients} showToast={showToast} />}
         {page === "doctor" && <DoctorPage patients={patients} setPatients={setPatients} showToast={showToast} />}
         {page === "records" && <RecordsPage patients={patients} setPatients={setPatients} showToast={showToast} />}
+        {page === "dashboard" && <Dashboard patients={patients} />}
       </div>
 
       <Toast message={toastMsg} visible={toastVisible} />
