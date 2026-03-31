@@ -1,6 +1,8 @@
 import { useState } from "react";
 import DoctorPage from "./DoctorPage";
 import Dashboard from "./Dashboard";
+import FrontDeskPage from "./FrontDeskPage";
+import FrontDesk from "./FrontDesk";
 
 const colors = {
   bg: "#F0F4F8",
@@ -397,13 +399,13 @@ export default function DentalStaffApp() {
         </div>
 
         <div style={{ background: colors.card, borderRadius: 14, padding: 6, display: "flex", gap: 4, boxShadow: "0 2px 12px rgba(37,99,235,0.06)" }}>
-          <NavTab label="Check In" active={page === "checkin"} onClick={() => setPage("checkin")} badge={todayCount} />
+          <NavTab label="Front Desk" active={page === "frontdesk"} onClick={() => setPage("frontdesk")} badge={todayCount} />
           <NavTab label="Doctor" active={page === "doctor"} onClick={() => setPage("doctor")} badge={waitingCount} />
           <NavTab label="Records" active={page === "records"} onClick={() => setPage("records")} badge={patients.length} />
           <NavTab label="Dashboard" active={page === "dashboard"} onClick={() => setPage("dashboard")} />
         </div>
 
-        {page === "checkin" && <CheckinPage patients={patients} setPatients={setPatients} showToast={showToast} />}
+        {page === "frontdesk" && <FrontDeskPage patients={patients} setPatients={setPatients} showToast={showToast} />}
         {page === "doctor" && <DoctorPage patients={patients} setPatients={setPatients} showToast={showToast} />}
         {page === "records" && <RecordsPage patients={patients} setPatients={setPatients} showToast={showToast} />}
         {page === "dashboard" && <Dashboard patients={patients} />}
